@@ -8,6 +8,8 @@
 package omeis.providers.re;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,16 @@ abstract class RenderingStrategy {
      * The maximum number of tasks that we will be using during rendering.
      */
     protected int maxTasks;
+
+    protected ExecutorService processor;
+
+    /**
+     * Shared thread Pool
+     *
+     */
+    public RenderingStrategy(ExecutorService processor) {
+        this.processor = processor;
+    }
 
     /**
      * Checks if the passed region is valid.
@@ -209,20 +221,39 @@ abstract class RenderingStrategy {
      * according to the model that dictates how transformed raw data is to be
      * mapped into a color space. This model is identified by the passed
      * argument.
-     * 
+     *
      * @param model
      *            Identifies the color space model.
      * @return A strategy suitable for the specified model.
+     * @deprecated Please use {@link #makeNew(RenderingModel, ExecutorService)}.
      */
+    @Deprecated()
     static RenderingStrategy makeNew(RenderingModel model) {
+        ExecutorService processor = Executors.newCachedThreadPool();
+        return makeNew(model, processor);
+    }
+
+    /**
+     * Factory method to retrieve a concrete strategy. The strategy is selected
+     * according to the model that dictates how transformed raw data is to be
+     * mapped into a color space. This model is identified by the passed
+     * argument.
+     *
+     * @param model
+     *            Identifies the color space model.
+     * @param processor
+     *            Shared thread pool.
+     * @return A strategy suitable for the specified model.
+     */
+    static RenderingStrategy makeNew(RenderingModel model, ExecutorService processor) {
         String value = model.getValue();
         if (value.equals(Renderer.MODEL_GREYSCALE)) {
             return new GreyScaleStrategy();
         } else if (value.equals(Renderer.MODEL_HSB)) {
-            return new HSBStrategy();
+            return new HSBStrategy(processor);
         } else if (value.equals(Renderer.MODEL_RGB)) {
         	//return new RGBStrategy();
-        	return new HSBStrategy();
+            return new HSBStrategy(processor);
         }
         log.warn("WARNING: Unknown model '" + value + "' using greyscale.");
         return new GreyScaleStrategy();

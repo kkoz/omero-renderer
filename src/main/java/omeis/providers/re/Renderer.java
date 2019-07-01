@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -139,6 +141,11 @@ public class Renderer {
 
     /** Lookup table provider. */
     private LutProvider lutProvider;
+
+    /**
+     * Shared thread Pool
+     */
+    private ExecutorService processor;
 
     /**
      * Returns a copy of a list of channel bindings with one element removed;
@@ -354,10 +361,32 @@ public class Renderer {
     		List<RenderingModel> renderingModels, Pixels pixelsObj,
             RenderingDef renderingDefObj, PixelBuffer bufferObj,
             LutProvider lutProvider) {
+        this(quantumFactory, renderingModels, pixelsObj, renderingDefObj, bufferObj,
+                lutProvider, Executors.newCachedThreadPool());
+    }
+
+    /**
+     * Creates a new instance to render the specified pixels set and get this
+     * new instance ready for rendering.
+     *
+     * @param quantumFactory a populated quantum factory.
+     * @param renderingModels an enumerated list of all rendering models.
+     * @param pixelsObj Pixels object.
+     * @param renderingDefObj Rendering definition object.
+     * @param bufferObj PixelBuffer object.
+     * @param lutProvider provider of the available lookup tables.
+     * @param processor shared thread pool
+     * @throws NullPointerException If <code>null</code> parameters are passed.
+     */
+    public Renderer(QuantumFactory quantumFactory,
+                    List<RenderingModel> renderingModels, Pixels pixelsObj,
+                    RenderingDef renderingDefObj, PixelBuffer bufferObj,
+                    LutProvider lutProvider, ExecutorService processor) {
         metadata = pixelsObj;
         rndDef = renderingDefObj;
         buffer = bufferObj;
         this.lutProvider = lutProvider;
+        this.processor = processor;
         if (metadata == null) {
             throw new NullPointerException("Expecting not null metadata");
         } else if (rndDef == null) {
@@ -396,7 +425,7 @@ public class Renderer {
         }
 
         // Create an appropriate rendering strategy.
-        renderingStrategy = RenderingStrategy.makeNew(rndDef.getModel());
+        renderingStrategy = RenderingStrategy.makeNew(rndDef.getModel(), processor);
         
         // Examine the metadata we've been given and enable optimizations.
         checkOptimizations();
@@ -424,7 +453,7 @@ public class Renderer {
     public void setModel(RenderingModel model)
     {
         rndDef.setModel(model);
-        renderingStrategy = RenderingStrategy.makeNew(model);
+        renderingStrategy = RenderingStrategy.makeNew(model, processor);
     }
 
     /**

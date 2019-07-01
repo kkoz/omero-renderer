@@ -62,7 +62,18 @@ class HSBStrategy extends RenderingStrategy {
 	
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(HSBStrategy.class);
-    
+
+    /** Shared thread pool */
+    ExecutorService processor;
+
+    public HSBStrategy(ExecutorService processor) {
+        this.processor = processor;
+    }
+
+    public HSBStrategy(Object obj) {
+        this.processor = Executors.newCachedThreadPool();
+    }
+
     /**
      * Retrieves the maximum number of reasonable tasks to schedule based on
      * image size and <i>maxTasks</i>.
@@ -329,7 +340,6 @@ class HSBStrategy extends RenderingStrategy {
         performanceStats.startRendering();
         int n = tasks.length;
         Future[] rndTskFutures = new Future[n]; // [0] unused.
-        ExecutorService processor = Executors.newCachedThreadPool();
 
         while (0 < --n) {
             rndTskFutures[n] = processor.submit(tasks[n]);
