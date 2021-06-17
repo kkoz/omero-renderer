@@ -48,7 +48,7 @@ import omeis.providers.re.quantum.QuantumStrategy;
  * change during the whole image rendering process and that each task is
  * working on its own atomic unit of work.
  * </p>
- * 
+ *
  * @author Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp; <a
  *         href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
  * @author <br>
@@ -59,15 +59,19 @@ import omeis.providers.re.quantum.QuantumStrategy;
  * @since OME2.2
  */
 class HSBStrategy extends RenderingStrategy {
-	
+
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(HSBStrategy.class);
 
     /** Shared thread pool */
     ExecutorService processor;
 
+    /** Should the ExecutorService be shut down after processing */
+    boolean shutdown = true;
+
     public HSBStrategy(ExecutorService processor) {
         this.processor = processor;
+        this.shutdown = false; //Don't shut down an ExecutorService given to us by the client in case they plan on reusing it
     }
 
     public HSBStrategy(Object obj) {
@@ -77,7 +81,7 @@ class HSBStrategy extends RenderingStrategy {
     /**
      * Retrieves the maximum number of reasonable tasks to schedule based on
      * image size and <i>maxTasks</i>.
-     * 
+     *
      * @param size The width along the X2 axis.
      * @return the number of tasks to schedule.
      */
@@ -92,7 +96,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Retrieves the wavelength data for all the active channels and overlays.
-     * 
+     *
      * @return the wavelength data.
      */
     private List<Plane2D> getWavelengthData(PlaneDef pDef) {
@@ -103,12 +107,12 @@ class HSBStrategy extends RenderingStrategy {
         try
         {
         	RenderingStats performanceStats = renderer.getStats();
-        	wData = new ArrayList<Plane2D>();
+            wData = new ArrayList<Plane2D>();
 
         	for (int w = 0; w < channelBindings.length; w++) {
         		if (channelBindings[w].getActive()) {
         			performanceStats.startIO(w);
-        			wData.add(PlaneFactory.createPlane(pDef, w, metadata, 
+                    wData.add(PlaneFactory.createPlane(pDef, w, metadata,
         					pixels));
         			performanceStats.endIO(w);
         		}
@@ -130,13 +134,13 @@ class HSBStrategy extends RenderingStrategy {
             try
             {
                 pixels.close();
-            } 
+            }
             catch (IOException e)
             {
                 log.error("Pixels could not be closed successfully.", e);
     			throw new ResourceError(
     					e.getMessage() + " Please check server log.");
-            }        	
+            }
         }
 
         return wData;
@@ -163,7 +167,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Retrieves the color for each active channels.
-     * 
+     *
      * @return the active channel color data.
      */
     private List<int[]> getColors() {
@@ -173,7 +177,7 @@ class HSBStrategy extends RenderingStrategy {
         for (int w = 0; w < channelBindings.length; w++) {
             ChannelBinding cb = channelBindings[w];
             if (cb.getActive()) {
-                int[] theNewColor = new int[] { 
+                int[] theNewColor = new int[] {
                         cb.getRed(), cb.getGreen(),
                         cb.getBlue(), cb.getAlpha() };
                 colors.add(theNewColor);
@@ -195,7 +199,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Retrieves the quantum strategy for each active channels
-     * 
+     *
      * @return the active channel color data.
      */
     private List<QuantumStrategy> getStrategies() {
@@ -228,7 +232,7 @@ class HSBStrategy extends RenderingStrategy {
     /**
      * Creates a set of rendering tasks for the image based on the calling
      * buffer type.
-     * 
+     *
      * @param planeDef
      *            The plane to render.
      * @param buf
@@ -265,7 +269,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
      */
     @Override
@@ -283,10 +287,10 @@ class HSBStrategy extends RenderingStrategy {
         render(buf, planeDef);
         return buf;
     }
-    
+
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
      */
     @Override
@@ -306,7 +310,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#renderAsPackedIntRGBA(Renderer ctx, PlaneDef planeDef)
      */
     @Override
@@ -327,7 +331,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
      */
     private void render(RGBBuffer buf, PlaneDef planeDef) throws IOException,
@@ -362,8 +366,10 @@ class HSBStrategy extends RenderingStrategy {
             }
         }
 
-        // Shutdown the task processor
-        processor.shutdown();
+        // Shutdown the task processor if created in this class
+        if (shutdown) {
+            processor.shutdown();
+        }
 
         // End the performance metrics for this rendering event.
         performanceStats.endRendering();
@@ -371,7 +377,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#getImageSize(PlaneDef, Pixels)
      */
     @Override
@@ -382,7 +388,7 @@ class HSBStrategy extends RenderingStrategy {
 
     /**
      * Implemented as specified by the superclass.
-     * 
+     *
      * @see RenderingStrategy#getPlaneDimsAsString(PlaneDef, Pixels)
      */
     @Override
