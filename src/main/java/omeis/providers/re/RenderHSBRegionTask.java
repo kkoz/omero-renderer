@@ -5,6 +5,7 @@
 package omeis.providers.re;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,11 +242,11 @@ class RenderHSBRegionTask implements RenderingTask {
             boolean hasMap = cc.hasMapContext();
             QuantumStrategy qs = strategies.get(i);
             boolean isMask = qs instanceof BinaryMaskQuantizer? true : false;
-            redRatio = color[ColorsFactory.RED_INDEX] > 0 ? 
+            redRatio = color[ColorsFactory.RED_INDEX] > 0 ?
                     color[ColorsFactory.RED_INDEX] / 255.0 : 0.0;
-            greenRatio = color[ColorsFactory.GREEN_INDEX] > 0 ? 
+            greenRatio = color[ColorsFactory.GREEN_INDEX] > 0 ?
                      color[ColorsFactory.GREEN_INDEX] / 255.0 : 0.0;
-            blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ? 
+            blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ?
                      color[ColorsFactory.BLUE_INDEX] / 255.0 : 0.0;
             boolean isXYPlanar = plane.isXYPlanar();
             PixelData data = plane.getData();
@@ -258,6 +259,7 @@ class RenderHSBRegionTask implements RenderingTask {
 
             float alpha = new Integer(
                     color[ColorsFactory.ALPHA_INDEX]).floatValue() / 255;
+            HSBPixelShader shader = new HSBPixelShader();
             for (int x2 = x2Start; x2 < x2End; ++x2) {
                 for (int x1 = x1Start; x1 < x1End; ++x1) {
                     pix = width * x2 + x1;
@@ -272,25 +274,10 @@ class RenderHSBRegionTask implements RenderingTask {
                         discreteValue = cc.transform(discreteValue);
                     }
                     if (reader != null) {
-                        int r1 = ((buf[pix] & 0x00FF0000) >> 16);
-                        int r2 = reader.getRed(discreteValue) & 0xFF;
-                        int g1 = ((buf[pix] & 0x0000FF00) >> 8);
-                        int g2 = reader.getGreen(discreteValue) & 0xFF;
-                        int b1 = (buf[pix] & 0x000000FF);
-                        int b2 = reader.getBlue(discreteValue) & 0xFF;
-                        int r = r1+r2;
-                        if (r > 255) {
-                            r = 255;
-                        }
-                        int g = g1+g2;
-                        if (g > 255) {
-                            g = 255;
-                        }
-                        int b = b1+b2;
-                        if (b > 255) {
-                            b = 255;
-                        }
-                        buf[pix] = 0xFF000000 | r << 16 | g << 8 | b;
+                        buf[pix] = shader.shadePixel(discreteValue, buf[pix],
+                                reader.getRed(discreteValue),
+                                reader.getGreen(discreteValue),
+                                reader.getBlue(discreteValue));
                         continue;
                     }
                     // Primary colour optimization is in effect, we don't need
@@ -299,66 +286,17 @@ class RenderHSBRegionTask implements RenderingTask {
                     // the next pixel value.
                     if (colorOffset != 24)
                     {
-                        buf[pix] |= 0xFF000000;  // Alpha.
-                        buf[pix] |= discreteValue << colorOffset;
+                        buf[pix] = shader.shadePixel(discreteValue, buf[pix], colorOffset);
                         continue;
                     }
-                    newRValue = (int) (redRatio * discreteValue);
-                    newGValue = (int) (greenRatio * discreteValue);
-                    newBValue = (int) (blueRatio * discreteValue);
-                    
-                    // Pre-multiply the alpha for each colour component if the
-                    // image has a non-1.0 alpha component.
-                    if (!isAlphaless)
-                    {
-                    	newRValue *= alpha;
-                    	newGValue *= alpha;
-                    	newBValue *= alpha;
-                    }
-
-                    if (isMask && discreteValue == 255) {
-                    	// Since the mask is a hard value, we do not want to
-                    	// compromise on colour fidelity. Packed each colour
-                    	// component along with a 1.0 alpha into the buffer so
-                    	// that buffered images that use this buffer can be
-                    	// type 1 (3 bands, pre-multiplied alpha) or type 2
-                        // (4 bands, alpha component included).
-                        buf[pix] = 0xFF000000 | newRValue << 16
-                                   | newGValue << 8 | newBValue;
-                        continue;
-                    }
-                    // Add the existing colour component values to the new
-                    // colour component values.
-                    rValue = ((buf[pix] & 0x00FF0000) >> 16) + newRValue;
-                    gValue = ((buf[pix] & 0x0000FF00) >> 8) + newGValue;
-                    bValue = (buf[pix] & 0x000000FF) + newBValue;
-
-                    // Ensure that each colour component value is between 0 and
-                    // 255 (byte). We must make *certain* that values do not
-                    // wrap over 255 otherwise there will be corruption
-                    // introduced into the rendered image. The value may be over
-                    // 255 if we have mapped two high intensity channels to
-                    // the same color.
-                    if (rValue > 255) {
-                        rValue = 255;
-                    }
-                    if (gValue > 255) {
-                        gValue = 255;
-                    }
-                    if (bValue > 255) {
-                        bValue = 255;
-                    }
-
-                    // Packed each colour component along with a 1.0 alpha into
-                    // the buffer so that buffered images that use this buffer
-                    // can be type 1 (3 bands, pre-multiplied alpha) or type 2
-                    // (4 bands, alpha component included).
-                    buf[pix] = 0xFF000000 | rValue << 16 | gValue << 8 | bValue;
+                    buf[pix] = shader.shadePixel(discreteValue, buf[pix],
+                            redRatio, greenRatio, blueRatio, Optional.of(Float.valueOf(alpha)), isMask);
                 }
             }
             i++;
         }
     }
+
 
     /**
      * Renders into a packed integer array.
