@@ -245,65 +245,24 @@ class RenderHSBRegionTask implements RenderingTask {
         int[] color = colors.get(i);
         LutReader reader = readers.get(i);
         CodomainChain cc = chains.get(i);
-        boolean hasMap = cc.hasMapContext();
         QuantumStrategy qs = strategies.get(i);
-        boolean isMask = qs instanceof BinaryMaskQuantizer? true : false;
-        double redRatio = color[ColorsFactory.RED_INDEX] > 0 ?
-                color[ColorsFactory.RED_INDEX] / 255.0 : 0.0;
-        double greenRatio = color[ColorsFactory.GREEN_INDEX] > 0 ?
-                 color[ColorsFactory.GREEN_INDEX] / 255.0 : 0.0;
-        double blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ?
-                 color[ColorsFactory.BLUE_INDEX] / 255.0 : 0.0;
         boolean isXYPlanar = plane.isXYPlanar();
         PixelData data = plane.getData();
         int bytesPerPixel = data.bytesPerPixel();
 
-        // Get our color offset if we've got the primary color optimization
-        // enabled.
-        int colorOffset = 24;
-        if (isPrimaryColor && reader == null)
-            colorOffset = getColorOffset(color);
-
         float alpha = new Integer(
                 color[ColorsFactory.ALPHA_INDEX]).floatValue() / 255;
-        HSBPixelShader shader = new HSBPixelShader();
+        HSBPixelShader shader = new HSBPixelShader(qs, cc, alpha, reader, color, optimizations);
         for (int x2 = x2Start; x2 < x2End; ++x2) {
             for (int x1 = x1Start; x1 < x1End; ++x1) {
                 int width = x1End - x1Start;
                 int pix = width * x2 + x1;
-                int discreteValue;
+                double pixelValue;
                 if (isXYPlanar)
-                    discreteValue =
-                    qs.quantize(
-                            data.getPixelValueDirect(pix * bytesPerPixel));
+                    pixelValue = data.getPixelValueDirect(pix * bytesPerPixel);
                 else
-                    discreteValue =
-                        qs.quantize(plane.getPixelValue(x1, x2));
-                if (hasMap) {
-                    discreteValue = cc.transform(discreteValue);
-                }
-                if (reader != null) {
-                    buf[pix] = shader.shadePixel(discreteValue, buf[pix],
-                            reader.getRed(discreteValue),
-                            reader.getGreen(discreteValue),
-                            reader.getBlue(discreteValue));
-                    continue;
-                }
-                // Primary colour optimization is in effect, we don't need
-                // to do any of the sillyness below just shift the value
-                // into the correct colour component slot and move on to
-                // the next pixel value.
-                if (colorOffset != 24)
-                {
-                    buf[pix] = shader.shadePixel(discreteValue, buf[pix], colorOffset);
-                    continue;
-                }
-                Optional<Float> opalpha = Optional.empty();
-                if (!isAlphaless) {
-                    Optional.of(Float.valueOf(alpha));
-                }
-                buf[pix] = shader.shadePixel(discreteValue, buf[pix],
-                        redRatio, greenRatio, blueRatio, opalpha, isMask);
+                    pixelValue = plane.getPixelValue(x1, x2);
+                buf[pix] = shader.shadePixel(pixelValue, buf[pix]);
             }
         }
     }

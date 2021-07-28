@@ -1,11 +1,88 @@
 package omeis.providers.re;
 
-import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import omeis.providers.re.codomain.CodomainChain;
+import omeis.providers.re.lut.LutReader;
+import omeis.providers.re.quantum.BinaryMaskQuantizer;
+import omeis.providers.re.quantum.QuantizationException;
+import omeis.providers.re.quantum.QuantumStrategy;
 
 public class HSBPixelShader {
 
-    public HSBPixelShader() {
+    /** The logger for this particular class */
+    private static Logger log = LoggerFactory.getLogger(HSBPixelShader.class);
 
+    QuantumStrategy qs;
+    CodomainChain cc;
+    float alpha;
+    LutReader reader;
+    int[] color;
+    Optimizations optimizations;
+
+    public HSBPixelShader(QuantumStrategy qs,
+            CodomainChain cc,
+            float alpha,
+            LutReader reader,
+            int[] color,
+            Optimizations optimizations) {
+        this.qs = qs;
+        this.cc = cc;
+        this.alpha = alpha;
+        this.reader = reader;
+        this.color = color;
+        this.optimizations = optimizations;
+    }
+
+    public int shadePixel(double pixelValue, int startingValue) throws QuantizationException {
+        int discreteValue = qs.quantize(pixelValue);
+        if (cc.hasMapContext()) {
+            discreteValue = cc.transform(discreteValue);
+        }
+        if (reader != null) {
+            return shadePixel(discreteValue, startingValue,
+                    reader.getRed(discreteValue),
+                    reader.getGreen(discreteValue),
+                    reader.getBlue(discreteValue));
+        }
+        int colorOffset = 24;
+        if (optimizations.isPrimaryColorEnabled() && reader == null)
+            colorOffset = getColorOffset(color);
+        // Primary colour optimization is in effect, we don't need
+        // to do any of the sillyness below just shift the value
+        // into the correct colour component slot and move on to
+        // the next pixel value.
+        if (colorOffset != 24)
+        {
+            return shadePixel(discreteValue, startingValue, colorOffset);
+        }
+        double redRatio = color[ColorsFactory.RED_INDEX] > 0 ?
+                color[ColorsFactory.RED_INDEX] / 255.0 : 0.0;
+        double greenRatio = color[ColorsFactory.GREEN_INDEX] > 0 ?
+                 color[ColorsFactory.GREEN_INDEX] / 255.0 : 0.0;
+        double blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ?
+                 color[ColorsFactory.BLUE_INDEX] / 255.0 : 0.0;
+        boolean isMask = qs instanceof BinaryMaskQuantizer? true : false;
+        return shadePixel(discreteValue, startingValue,
+                redRatio, greenRatio, blueRatio, alpha, isMask);
+    }
+
+    /**
+     * Returns a color offset based on which color component is 0xFF.
+     * @param color the color to check.
+     * @return an integer color offset in bits.
+     */
+    private int getColorOffset(int[] color)
+    {
+        if (color[ColorsFactory.RED_INDEX] == 255)
+            return 16;
+        if (color[ColorsFactory.GREEN_INDEX] == 255)
+            return 8;
+        if (color[ColorsFactory.BLUE_INDEX] == 255)
+            return 0;
+        throw new IllegalArgumentException(
+                "Unable to find color component offset in color.");
     }
 
     public int shadePixel(int discreteValue, int startingValue, int lutr, int lutg, int lutb) {
@@ -45,7 +122,7 @@ public class HSBPixelShader {
             double redRatio,
             double greenRatio,
             double blueRatio,
-            Optional<Float> alpha,
+            float alpha,
             boolean isMask) {
         int newRValue = (int) (redRatio * discreteValue);
         int newGValue = (int) (greenRatio * discreteValue);
@@ -53,11 +130,11 @@ public class HSBPixelShader {
 
         // Pre-multiply the alpha for each colour component if the
         // image has a non-1.0 alpha component.
-        if (alpha.isPresent())
+        if (!optimizations.isAlphalessRendering())
         {
-            newRValue *= alpha.get();
-            newGValue *= alpha.get();
-            newBValue *= alpha.get();
+            newRValue *= alpha;
+            newGValue *= alpha;
+            newBValue *= alpha;
         }
 
         if (isMask && discreteValue == 255) {

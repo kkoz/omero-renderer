@@ -126,8 +126,8 @@ class GreyScaleStrategy extends RenderingStrategy {
 	 * 
 	 * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
 	 */
-	@Override
-	RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
+	//@Override
+	RGBIntBuffer renderAsPackedIntOld(Renderer ctx, PlaneDef planeDef)
 	        throws IOException, QuantizationException {
         // Set the context and retrieve objects we're gonna use.
         renderer = ctx;
@@ -201,6 +201,63 @@ class GreyScaleStrategy extends RenderingStrategy {
         }
 	    return dataBuf;
 	}
+
+	/**
+     * Implemented as specified by the superclass.
+     * 
+     * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
+     */
+	@Override
+    RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
+            throws IOException, QuantizationException {
+	    log.info("NEW renderAsPackedInt");
+        // Set the context and retrieve objects we're gonna use.
+        renderer = ctx;
+        // Initialize sizeX1 and sizeX2 according to the plane definition and
+        // create the RGB buffer.
+        Pixels metadata = renderer.getMetadata();
+        initAxesSize(planeDef, metadata);
+        if (!findFirstActiveChannelBinding())
+        {
+            return getIntBuffer();
+        }
+        PixelBuffer pixels = renderer.getPixels();
+        RenderingStats performanceStats = renderer.getStats();
+        QuantumStrategy qs =
+            renderer.getQuantumManager().getStrategyFor(channel);
+        CodomainChain cc = renderer.getCodomainChain(channel);
+
+        // Retrieve the planar data to render
+
+        Plane2D plane;
+        try {
+            performanceStats.startIO(channel);
+            plane = PlaneFactory.createPlane(planeDef, channel, metadata, pixels);
+            performanceStats.endIO(channel);
+        } finally
+        {
+            try
+            {
+                pixels.close();
+            }
+            catch (IOException e)
+            {
+                log.error("Pixels could not be closed successfully.", e);
+                throw new ResourceError(
+                        e.getMessage() + " Please check server log.");
+            }
+        }
+
+        RGBIntBuffer dataBuf = getIntBuffer();
+
+        int alpha = channelBinding.getAlpha();
+        int[] buf = ((RGBIntBuffer) dataBuf).getDataBuffer();
+        boolean hasMapContext = cc.hasMapContext();
+        GreyscalePixelShader gsshader = new GreyscalePixelShader(qs, cc, hasMapContext, alpha);
+        SingleWorkerStrategy workerStrat = new SingleWorkerStrategy(gsshader, sizeX1, sizeX2, buf, plane);
+        workerStrat.work();
+        return dataBuf;
+    }
 
 	/**
 	 * Implemented as specified by the superclass.
