@@ -9,27 +9,24 @@ import omeis.providers.re.quantum.BinaryMaskQuantizer;
 import omeis.providers.re.quantum.QuantizationException;
 import omeis.providers.re.quantum.QuantumStrategy;
 
-public class HSBPixelShader {
+public class HSBPixelShader implements PixelShader {
 
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(HSBPixelShader.class);
 
     QuantumStrategy qs;
     CodomainChain cc;
-    float alpha;
     LutReader reader;
     int[] color;
     Optimizations optimizations;
 
     public HSBPixelShader(QuantumStrategy qs,
             CodomainChain cc,
-            float alpha,
             LutReader reader,
             int[] color,
             Optimizations optimizations) {
         this.qs = qs;
         this.cc = cc;
-        this.alpha = alpha;
         this.reader = reader;
         this.color = color;
         this.optimizations = optimizations;
@@ -64,6 +61,8 @@ public class HSBPixelShader {
         double blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ?
                  color[ColorsFactory.BLUE_INDEX] / 255.0 : 0.0;
         boolean isMask = qs instanceof BinaryMaskQuantizer? true : false;
+        float alpha = new Float(
+                color[ColorsFactory.ALPHA_INDEX]).floatValue() / 65025;// 255*255
         return shadePixel(discreteValue, startingValue,
                 redRatio, greenRatio, blueRatio, alpha, isMask);
     }

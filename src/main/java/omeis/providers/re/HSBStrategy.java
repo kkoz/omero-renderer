@@ -63,6 +63,23 @@ class HSBStrategy extends RenderingStrategy {
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(HSBStrategy.class);
     
+    private WorkerStrategy workerStrat;
+    
+    public HSBStrategy(WorkerStrategy workerStrat) {
+        this.workerStrat = workerStrat;
+    }
+    
+    public HSBStrategy() {
+        /*
+        this.workerStrat = new MultiWorkerStrategy(dataBuffer,
+                wData,
+                optimizations,
+                colors,
+                performanceStats,
+                readers, strategies, chains, sizeX1, sizeX2, maxTasks, exservice)
+                */
+    }
+    
     /**
      * Retrieves the maximum number of reasonable tasks to schedule based on
      * image size and <i>maxTasks</i>.

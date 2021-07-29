@@ -252,7 +252,7 @@ class RenderHSBRegionTask implements RenderingTask {
 
         float alpha = new Integer(
                 color[ColorsFactory.ALPHA_INDEX]).floatValue() / 255;
-        HSBPixelShader shader = new HSBPixelShader(qs, cc, alpha, reader, color, optimizations);
+        HSBPixelShader shader = new HSBPixelShader(qs, cc, reader, color, optimizations);
         for (int x2 = x2Start; x2 < x2End; ++x2) {
             for (int x1 = x1Start; x1 < x1End; ++x1) {
                 int width = x1End - x1Start;

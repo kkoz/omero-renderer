@@ -227,6 +227,31 @@ abstract class RenderingStrategy {
         log.warn("WARNING: Unknown model '" + value + "' using greyscale.");
         return new GreyScaleStrategy();
     }
+    
+    /**
+     * Factory method to retrieve a concrete strategy. The strategy is selected
+     * according to the model that dictates how transformed raw data is to be
+     * mapped into a color space. This model is identified by the passed
+     * argument.
+     * 
+     * @param model
+     *            Identifies the color space model.
+     * @return A strategy suitable for the specified model.
+     */
+    static RenderingStrategy makeNew(RenderingModel model,
+            WorkerStrategy workerStrat) {
+        String value = model.getValue();
+        if (value.equals(Renderer.MODEL_GREYSCALE)) {
+            return new GreyScaleStrategy();
+        } else if (value.equals(Renderer.MODEL_HSB)) {
+            return new HSBStrategy();
+        } else if (value.equals(Renderer.MODEL_RGB)) {
+            //return new RGBStrategy();
+            return new HSBStrategy();
+        }
+        log.warn("WARNING: Unknown model '" + value + "' using greyscale.");
+        return new GreyScaleStrategy();
+    }
 
     /**
      * Encapsulates a specific rendering algorithm. The image is rendered

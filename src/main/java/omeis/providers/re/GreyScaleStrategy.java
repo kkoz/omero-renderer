@@ -252,8 +252,7 @@ class GreyScaleStrategy extends RenderingStrategy {
 
         int alpha = channelBinding.getAlpha();
         int[] buf = ((RGBIntBuffer) dataBuf).getDataBuffer();
-        boolean hasMapContext = cc.hasMapContext();
-        GreyscalePixelShader gsshader = new GreyscalePixelShader(qs, cc, hasMapContext, alpha);
+        GreyscalePixelShader gsshader = new GreyscalePixelShader(qs, cc, alpha);
         SingleWorkerStrategy workerStrat = new SingleWorkerStrategy(gsshader, sizeX1, sizeX2, buf, plane);
         workerStrat.work();
         return dataBuf;

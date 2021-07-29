@@ -27,7 +27,7 @@ import omeis.providers.re.lut.LutReader;
 import omeis.providers.re.quantum.QuantizationException;
 import omeis.providers.re.quantum.QuantumStrategy;
 
-public class MultiWorkerStrategy {
+public class MultiWorkerStrategy implements WorkerStrategy{
     
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(MultiWorkerStrategy.class);
