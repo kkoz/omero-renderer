@@ -119,7 +119,7 @@ class HSBStrategy extends RenderingStrategy {
             try
             {
                 pixels.close();
-            } 
+            }
             catch (IOException e)
             {
                 log.error("Pixels could not be closed successfully.", e);
@@ -319,7 +319,7 @@ class HSBStrategy extends RenderingStrategy {
      * 
      * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
      */
-    private void render(RGBBuffer buf, PlaneDef planeDef) throws IOException,
+    private void renderOld(RGBBuffer buf, PlaneDef planeDef) throws IOException,
             QuantizationException {
         RenderingStats performanceStats = renderer.getStats();
         // Process each active wavelength. If their number N > 1, then
@@ -357,6 +357,35 @@ class HSBStrategy extends RenderingStrategy {
 
         // End the performance metrics for this rendering event.
         performanceStats.endRendering();
+    }
+    
+    /**
+     * Implemented as specified by the superclass.
+     * 
+     * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
+     */
+    private void render(RGBBuffer buf, PlaneDef planeDef) throws IOException,
+            QuantizationException {
+        ExecutorService processor = Executors.newCachedThreadPool();
+        MultiWorkerStrategy strat = new MultiWorkerStrategy(buf,
+                getWavelengthData(planeDef),
+                renderer.getOptimizations(),
+                getColors(),
+                renderer.getStats(),
+                renderer.getLutProvider().getLutReaders(
+                        renderer.getChannelBindings()),
+                getStrategies(),
+                renderer.getCodomainChains(),
+                sizeX1,
+                sizeX2,
+                maxTasks,
+                processor);
+        try {
+            strat.work();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     /**

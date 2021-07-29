@@ -1,15 +1,7 @@
 package omeis.providers.re;
 
-import java.io.IOException;
-
-import ome.conditions.ResourceError;
-import ome.io.nio.PixelBuffer;
-import ome.model.core.Pixels;
-import omeis.providers.re.codomain.CodomainChain;
 import omeis.providers.re.data.Plane2D;
-import omeis.providers.re.data.PlaneFactory;
 import omeis.providers.re.quantum.QuantizationException;
-import omeis.providers.re.quantum.QuantumStrategy;
 
 public class SingleWorkerStrategy {
     
