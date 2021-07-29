@@ -32,42 +32,30 @@ public class MultiWorkerStrategy implements WorkerStrategy{
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(MultiWorkerStrategy.class);
     
-    //PixelShader shader;
+    PixelShaderFactory shaderFactory;
+    String shaderType;
     RGBBuffer dataBuffer;
     List<Plane2D> wData;
-    Optimizations optimizations;
-    List<int[]> colors;
     RenderingStats performanceStats;
-    List<LutReader> readers;
-    List<QuantumStrategy> strategies;
-    List<CodomainChain> chains;
     int sizeX1;
     int sizeX2;
     int maxTasks;
     ExecutorService exservice;
 
-    public MultiWorkerStrategy(//PixelShader shader,
+    public MultiWorkerStrategy(PixelShaderFactory shaderFactory,
+            String shaderType,
             RGBBuffer dataBuffer,
             List<Plane2D> wData,
-            Optimizations optimizations,
-            List<int[]> colors,
             RenderingStats performanceStats,
-            List<LutReader> readers,
-            List<QuantumStrategy> strategies,
-            List<CodomainChain> chains,
             int sizeX1,
             int sizeX2,
             int maxTasks,
             ExecutorService exservice) {
-        //this.shader = shader;
+        this.shaderFactory = shaderFactory;
+        this.shaderType = shaderType;
         this.dataBuffer = dataBuffer;
         this.wData = wData;
-        this.optimizations = optimizations;
-        this.colors = colors;
         this.performanceStats = performanceStats;
-        this.readers = readers;
-        this.strategies = strategies;
-        this.chains = chains;
         this.sizeX1 = sizeX1;
         this.sizeX2 = sizeX2;
         this.maxTasks = maxTasks;
@@ -133,17 +121,7 @@ public class MultiWorkerStrategy implements WorkerStrategy{
         for (int i = 0; i < taskCount; i++) {
                 int x2Start = i*delta;
                 int x2End = (i+1)*delta;
-                tasks.add(new MultiWorkerTask(x1Start,
-                        x1End,
-                        x2Start,
-                        x2End,
-                        dataBuffer,
-                        optimizations,
-                        wData,
-                        colors,
-                        readers,
-                        chains,
-                        strategies));
+                tasks.add(new MultiWorkerTask(shaderFactory, shaderType, x1Start, x1End, x2Start, x2End, dataBuffer, wData));
         }
 
         // Turn the list into an array an return it.
@@ -165,57 +143,5 @@ public class MultiWorkerStrategy implements WorkerStrategy{
             }
         }
         return 1;
-    }
-    
-    /**
-     * Retrieves the wavelength data for all the active channels and overlays.
-     * 
-     * @return the wavelength data.
-     */
-    private List<Plane2D> getWavelengthData(PlaneDef pDef,
-            ChannelBinding[] channelBindings,
-            Pixels metadata,
-            PixelBuffer pixels,
-            RenderingStats performanceStats,
-            Map<byte[], Integer> overlays) {
-        List<Plane2D> wData = null;
-        try
-        {
-            wData = new ArrayList<Plane2D>();
-
-            for (int w = 0; w < channelBindings.length; w++) {
-                if (channelBindings[w].getActive()) {
-                    performanceStats.startIO(w);
-                    wData.add(PlaneFactory.createPlane(pDef, w, metadata, 
-                            pixels));
-                    performanceStats.endIO(w);
-                }
-            }
-            if (overlays != null)
-            {
-                for (byte[] overlay : overlays.keySet())
-                {
-                ome.util.PixelData data =
-                    new PixelData(PixelsType.VALUE_BIT, ByteBuffer.wrap(overlay));
-                    wData.add(new Plane2D(pDef, metadata, data));
-                }
-            }
-        }
-        finally
-        {
-            // Make sure that the pixel buffer is cleansed properly.
-            try
-            {
-                pixels.close();
-            } 
-            catch (IOException e)
-            {
-                log.error("Pixels could not be closed successfully.", e);
-                throw new ResourceError(
-                        e.getMessage() + " Please check server log.");
-            }           
-        }
-
-        return wData;
     }
 }

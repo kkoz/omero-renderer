@@ -384,15 +384,19 @@ class HSBStrategy extends RenderingStrategy {
     private void render(RGBBuffer buf, PlaneDef planeDef) throws IOException,
             QuantizationException {
         ExecutorService processor = Executors.newCachedThreadPool();
-        MultiWorkerStrategy strat = new MultiWorkerStrategy(buf,
-                getWavelengthData(planeDef),
+        PixelShaderFactory shaderFactory = new PixelShaderFactory(
                 renderer.getOptimizations(),
                 getColors(),
-                renderer.getStats(),
                 renderer.getLutProvider().getLutReaders(
                         renderer.getChannelBindings()),
-                getStrategies(),
                 renderer.getCodomainChains(),
+                getStrategies());
+        String shaderType = PixelShaderFactory.HSB_SHADER;
+        MultiWorkerStrategy strat = new MultiWorkerStrategy(shaderFactory,
+                shaderType,
+                buf,
+                getWavelengthData(planeDef),
+                renderer.getStats(),
                 sizeX1,
                 sizeX2,
                 maxTasks,
