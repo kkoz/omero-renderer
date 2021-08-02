@@ -7,17 +7,26 @@
 
 package omeis.providers.re;
 
+import java.awt.Color;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ome.model.core.Pixels;
+import ome.model.display.ChannelBinding;
+import ome.model.display.QuantumDef;
+import ome.model.enums.PixelsType;
 import ome.model.enums.RenderingModel;
 
 import omeis.providers.re.data.PlaneDef;
 import omeis.providers.re.data.RegionDef;
+import omeis.providers.re.quantum.BinaryMaskQuantizer;
 import omeis.providers.re.quantum.QuantizationException;
+import omeis.providers.re.quantum.QuantumStrategy;
 
 /**
  * Defines how to encapsulate a specific rendering algorithm.
@@ -380,4 +389,74 @@ abstract class RenderingStrategy {
      */
     abstract String getPlaneDimsAsString(PlaneDef pd, Pixels pixels);
 
+    abstract RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef, WorkerStrategy workerStrat)
+            throws IOException, QuantizationException;
+
+
+
+    /**
+     * Retrieves the color for each active channels.
+     * 
+     * @return the active channel color data.
+     */
+    protected List<int[]> getColors() {
+        ChannelBinding[] channelBindings = renderer.getChannelBindings();
+        List<int[]> colors = new ArrayList<int[]>();
+
+        for (int w = 0; w < channelBindings.length; w++) {
+            ChannelBinding cb = channelBindings[w];
+            if (cb.getActive()) {
+                int[] theNewColor = new int[] { 
+                        cb.getRed(), cb.getGreen(),
+                        cb.getBlue(), cb.getAlpha() };
+                colors.add(theNewColor);
+            }
+        }
+        Map<byte[], Integer> overlays = renderer.getOverlays();
+        if (overlays != null)
+        {
+            for (byte[] overlay : overlays.keySet())
+            {
+                Integer packedColor = overlays.get(overlay);
+                Color color = new Color(packedColor);
+                colors.add(new int[] { color.getRed(), color.getBlue(),
+                                       color.getGreen(), color.getAlpha() });
+            }
+        }
+        return colors;
+    }
+    
+
+
+    /**
+     * Retrieves the quantum strategy for each active channels
+     * 
+     * @return the active channel color data.
+     */
+    protected List<QuantumStrategy> getStrategies() {
+        ChannelBinding[] channelBindings = renderer.getChannelBindings();
+        QuantumManager qManager = renderer.getQuantumManager();
+        List<QuantumStrategy> strats = new ArrayList<QuantumStrategy>();
+
+        for (int w = 0; w < channelBindings.length; w++) {
+            if (channelBindings[w].getActive()) {
+                strats.add(qManager.getStrategyFor(w));
+            }
+        }
+        Map<byte[], Integer> overlays = renderer.getOverlays();
+        if (overlays != null)
+        {
+            QuantumDef def = new QuantumDef();  // Just to fulfill interface
+            Pixels pixels = new Pixels();
+            PixelsType bitType = new PixelsType();
+            bitType.setValue(PixelsType.VALUE_BIT);
+            bitType.setBitSize(1);
+            pixels.setPixelsType(bitType);
+            for (int i = 0; i < overlays.size(); i++)
+            {
+                strats.add(new BinaryMaskQuantizer(def, pixels));
+            }
+        }
+        return strats;
+    }
 }

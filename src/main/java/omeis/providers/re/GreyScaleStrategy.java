@@ -252,8 +252,16 @@ class GreyScaleStrategy extends RenderingStrategy {
 
         int alpha = channelBinding.getAlpha();
         int[] buf = ((RGBIntBuffer) dataBuf).getDataBuffer();
+        PixelShaderFactory shaderFactory = new PixelShaderFactory(
+                renderer.getOptimizations(),
+                getColors(),
+                renderer.getLutProvider().getLutReaders(
+                        renderer.getChannelBindings()),
+                renderer.getCodomainChains(),
+                getStrategies());
+        String shaderType = PixelShaderFactory.GREYSCALE_SHADER;
         GreyscalePixelShader gsshader = new GreyscalePixelShader(qs, cc, alpha);
-        SingleWorkerStrategy workerStrat = new SingleWorkerStrategy(gsshader, sizeX1, sizeX2, buf, plane);
+        SingleWorkerStrategy workerStrat = new SingleWorkerStrategy(shaderFactory, shaderType, sizeX1, sizeX2, buf, plane);
         workerStrat.work();
         return dataBuf;
     }
@@ -365,6 +373,13 @@ class GreyScaleStrategy extends RenderingStrategy {
     String getPlaneDimsAsString(PlaneDef pd, Pixels pixels) {
         initAxesSize(pd, pixels);
         return sizeX1 + "x" + sizeX2;
+    }
+
+    @Override
+    RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef, WorkerStrategy workerStrat)
+            throws IOException, QuantizationException {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

@@ -168,70 +168,6 @@ class HSBStrategy extends RenderingStrategy {
     }
 
     /**
-     * Retrieves the color for each active channels.
-     * 
-     * @return the active channel color data.
-     */
-    private List<int[]> getColors() {
-        ChannelBinding[] channelBindings = renderer.getChannelBindings();
-        List<int[]> colors = new ArrayList<int[]>();
-
-        for (int w = 0; w < channelBindings.length; w++) {
-            ChannelBinding cb = channelBindings[w];
-            if (cb.getActive()) {
-                int[] theNewColor = new int[] { 
-                        cb.getRed(), cb.getGreen(),
-                        cb.getBlue(), cb.getAlpha() };
-                colors.add(theNewColor);
-            }
-        }
-    	Map<byte[], Integer> overlays = renderer.getOverlays();
-    	if (overlays != null)
-    	{
-    		for (byte[] overlay : overlays.keySet())
-    		{
-    			Integer packedColor = overlays.get(overlay);
-    			Color color = new Color(packedColor);
-    			colors.add(new int[] { color.getRed(), color.getBlue(),
-    					               color.getGreen(), color.getAlpha() });
-    		}
-    	}
-        return colors;
-    }
-
-    /**
-     * Retrieves the quantum strategy for each active channels
-     * 
-     * @return the active channel color data.
-     */
-    private List<QuantumStrategy> getStrategies() {
-        ChannelBinding[] channelBindings = renderer.getChannelBindings();
-        QuantumManager qManager = renderer.getQuantumManager();
-        List<QuantumStrategy> strats = new ArrayList<QuantumStrategy>();
-
-        for (int w = 0; w < channelBindings.length; w++) {
-            if (channelBindings[w].getActive()) {
-                strats.add(qManager.getStrategyFor(w));
-            }
-        }
-    	Map<byte[], Integer> overlays = renderer.getOverlays();
-    	if (overlays != null)
-    	{
-    		QuantumDef def = new QuantumDef();  // Just to fulfill interface
-    		Pixels pixels = new Pixels();
-    		PixelsType bitType = new PixelsType();
-    		bitType.setValue(PixelsType.VALUE_BIT);
-    		bitType.setBitSize(1);
-    		pixels.setPixelsType(bitType);
-    		for (int i = 0; i < overlays.size(); i++)
-    		{
-    			strats.add(new BinaryMaskQuantizer(def, pixels));
-    		}
-    	}
-        return strats;
-    }
-
-    /**
      * Creates a set of rendering tasks for the image based on the calling
      * buffer type.
      * 
@@ -307,6 +243,26 @@ class HSBStrategy extends RenderingStrategy {
         initAxesSize(planeDef, metadata);
         RGBIntBuffer buf = getIntBuffer();
         render(buf, planeDef);
+        return buf;
+    }
+    
+    /**
+     * Implemented as specified by the superclass.
+     * 
+     * @see RenderingStrategy#renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
+     */
+    @Override
+    RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef, WorkerStrategy workerStrat)
+            throws IOException, QuantizationException {
+        // Set the context and retrieve objects we're gonna use.
+        renderer = ctx;
+        Pixels metadata = renderer.getMetadata();
+
+        // Initialize sizeX1 and sizeX2 according to the plane definition and
+        // create the RGB buffer.
+        initAxesSize(planeDef, metadata);
+        RGBIntBuffer buf = getIntBuffer();
+        render(buf, planeDef, workerStrat);
         return buf;
     }
 
@@ -403,6 +359,29 @@ class HSBStrategy extends RenderingStrategy {
                 processor);
         try {
             strat.work();
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Implemented as specified by the superclass.
+     * 
+     * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
+     */
+    private void render(RGBBuffer buf, PlaneDef planeDef, WorkerStrategy workerStrat) throws IOException,
+            QuantizationException {
+        PixelShaderFactory shaderFactory = new PixelShaderFactory(
+                renderer.getOptimizations(),
+                getColors(),
+                renderer.getLutProvider().getLutReaders(
+                        renderer.getChannelBindings()),
+                renderer.getCodomainChains(),
+                getStrategies());
+        String shaderType = PixelShaderFactory.HSB_SHADER;
+        try {
+            workerStrat.work();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
