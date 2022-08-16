@@ -32,7 +32,7 @@ import omeis.providers.re.quantum.QuantizationException;
  * a concrete strategy depending on on how transformed data is to be mapped into
  * a color space.
  * </p>
- * 
+ *
  * @see Renderer
  * @author Jean-Marie Burel &nbsp;&nbsp;&nbsp;&nbsp; <a
  *         href="mailto:j.burel@dundee.ac.uk">j.burel@dundee.ac.uk</a>
@@ -47,10 +47,10 @@ abstract class RenderingStrategy {
 
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(RenderingStrategy.class);
-    
+
     /** The rendering context. */
     protected Renderer renderer;
-    
+
     /**
      * The number of pixels on the <i>X1</i>-axis. This is the <i>X</i>-axis
      * in the case of an <i>XY</i> or <i>XZ</i> plane. Otherwise it is the
@@ -64,7 +64,7 @@ abstract class RenderingStrategy {
      * &#151; <i>XZ</i> plane.
      */
     protected int sizeX2;
-    
+
     /**
      * The maximum number of tasks that we will be using during rendering.
      */
@@ -72,7 +72,7 @@ abstract class RenderingStrategy {
 
     /**
      * Checks if the passed region is valid.
-     * 
+     *
      * @param region The region to handle.
      * @param pixels The pixels set.
      */
@@ -99,15 +99,15 @@ abstract class RenderingStrategy {
     	int sizeX = pixels.getSizeX().intValue();
     	int sizeY = pixels.getSizeY().intValue();
     	if (x+w > sizeX) //reset the width.
-    		region.setWidth(sizeX-x); 
+    		region.setWidth(sizeX-x);
     	if (y+h > sizeY) //reset the height.
-    		region.setHeight(sizeY-y); 
+    		region.setHeight(sizeY-y);
     }
 
     /**
      * Initializes the <code>sizeX1</code> and <code>sizeX2</code> fields
      * according to the specified {@link PlaneDef#getSlice() slice}.
-     * 
+     *
      * @param pd
      *            Reference to the plane definition defined for the strategy.
      * @param pixels
@@ -158,7 +158,7 @@ abstract class RenderingStrategy {
      * Returns an RGB buffer for usage. Note that the buffer is reallocated
      * upon each call. Should only be called within the context of a
      * "render" operation as it requires a {@link renderer}.
-     * 
+     *
      * @param x1 The size to allocate along the X1-axis.
      * @param x2 The size to allocate along the X2-axis.
      * @return See above.
@@ -176,7 +176,7 @@ abstract class RenderingStrategy {
      * Returns an RGB integer buffer for usage. Note that the buffer is
      * reallocated upon each call. Should only be called within the context of
      * a "render" operation as it requires a {@link renderer}.
-     * 
+     *
      * @return See above.
      */
 	protected RGBIntBuffer getIntBuffer()
@@ -187,12 +187,12 @@ abstract class RenderingStrategy {
     	stats.endMalloc();
     	return buf;
     }
-	
+
     /**
      * Returns an RGBA integer buffer for usage. Note that the buffer is
      * reallocated upon each call. Should only be called within the context of
      * a "render" operation as it requires a {@link renderer}.
-     * 
+     *
      * @return See above.
      */
 	protected RGBAIntBuffer getRGBAIntBuffer()
@@ -209,7 +209,7 @@ abstract class RenderingStrategy {
      * according to the model that dictates how transformed raw data is to be
      * mapped into a color space. This model is identified by the passed
      * argument.
-     * 
+     *
      * @param model
      *            Identifies the color space model.
      * @return A strategy suitable for the specified model.
@@ -223,6 +223,8 @@ abstract class RenderingStrategy {
         } else if (value.equals(Renderer.MODEL_RGB)) {
         	//return new RGBStrategy();
         	return new HSBStrategy();
+        } else if (value.equals(Renderer.MODEL_RGB_INTERLEAVED)) {
+            return new RGBInterleavedStrategy();
         }
         log.warn("WARNING: Unknown model '" + value + "' using greyscale.");
         return new GreyScaleStrategy();
@@ -242,7 +244,7 @@ abstract class RenderingStrategy {
      * <code>ctx</code>. Transformed wavelength data is finally packed into a
      * {@link RGBBuffer} taking into account the color bindings defined by the
      * rendering context.
-     * 
+     *
      * @param ctx
      *            Represents the rendering environment.
      * @param pd
@@ -273,7 +275,7 @@ abstract class RenderingStrategy {
      * <code>ctx</code>. Transformed wavelength data is finally packed into a
      * {@link RGBBuffer} taking into account the color bindings defined by the
      * rendering context.
-     * 
+     *
      * @param ctx
      *            Represents the rendering environment.
      * @param pd
@@ -293,10 +295,10 @@ abstract class RenderingStrategy {
     /**
      * Encapsulates a specific rendering algorithm. The image is rendered
      * according to the current settings hold by the <code>ctx</code>
-     * argument. Typically, active wavelengths are processed by first 
-     * quantizing the wavelength data in the plane selected by <code>pd</code> 
+     * argument. Typically, active wavelengths are processed by first
+     * quantizing the wavelength data in the plane selected by <code>pd</code>
      * &#151; the quantum strategy is retrieved from the {@link QuantumManager}
-     * (accessed through the <code>ctx</code> object) and the actual data from 
+     * (accessed through the <code>ctx</code> object) and the actual data from
      * the {@link omeis.providers.re.data.PixelsData PixelsData} service again,
      * retrieved through <code>ctx</code>). Then the codomain transformations
      * are applied &#151; by calling the transform method of the
@@ -304,7 +306,7 @@ abstract class RenderingStrategy {
      * <code>ctx</code>. Transformed wavelength data is finally packed into a
      * {@link RGBBuffer} taking into account the color bindings defined by the
      * rendering context.
-     * 
+     *
      * @param ctx
      *            Represents the rendering environment.
      * @param pd
@@ -326,7 +328,7 @@ abstract class RenderingStrategy {
      * Returns the size, in bytes, of the {@link RGBBuffer} that would be
      * rendered from the plane selected by <code>pd</code> in a pixels set
      * having dimensions <code>dims</code>.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.
@@ -345,7 +347,7 @@ abstract class RenderingStrategy {
      * Otherwise it is the <i>Z</i>-axis &#151; <i>ZY</i> plane. The <i>X2</i>-axis
      * is the <i>Y</i>-axis in the case of an <i>XY</i> or <i>ZY</i> plane.
      * Otherwise it is the <i>Z</i>-axis &#151; <i>XZ</i> plane.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.

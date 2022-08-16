@@ -60,7 +60,7 @@ import omeis.providers.re.quantum.QuantumStrategy;
  * which is selected depending on how transformed data is to be mapped into a
  * color space.
  * </p>
- * 
+ *
  * @see RenderingDef
  * @see QuantumManager
  * @see CodomainChain
@@ -78,10 +78,10 @@ public class Renderer {
 
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(Renderer.class);
-    
+
     /** The maximum number of channels. */
     public static final int		MAX_CHANNELS = 8;
-    
+
     /** Identifies the type used to store model values. */
     public static final String MODEL_GREYSCALE = RenderingModel.VALUE_GREYSCALE;
 
@@ -90,6 +90,8 @@ public class Renderer {
 
     /** Identifies the type used to store model values. */
     public static final String MODEL_HSB = MODEL_RGB;
+
+    public static final String MODEL_RGB_INTERLEAVED = "rgb-interleaved";
 
     /** Identifies the type used to store photometric interpretation values. */
     @Deprecated
@@ -133,7 +135,7 @@ public class Renderer {
 
     /** Renderer optimizations. */
     private Optimizations optimizations = new Optimizations();
-    
+
     /** Map of overlays we've currently been told to render. */
     private Map<byte[], Integer> overlays;
 
@@ -143,7 +145,7 @@ public class Renderer {
     /**
      * Returns a copy of a list of channel bindings with one element removed;
      * the so called "other" channel bindings for the image.
-     * 
+     *
      * @param bindings	The original bindings.
      * @param toRemove	The bindings to remove.
      * @throws IllegalArgumentException if the <code>toRemove</code> channel
@@ -165,11 +167,11 @@ public class Renderer {
     	}
     	return otherBindings;
     }
-    
+
 	/**
-	 * Returns <code>true</code> if the color is black or white, 
+	 * Returns <code>true</code> if the color is black or white,
 	 * <code>false</code> otherwise.
-	 * 
+	 *
 	 * @param color The array representing an RGB color.
 	 * @return See above.
 	 */
@@ -180,24 +182,24 @@ public class Renderer {
 		if (color[0] == 0 && color[1] == 0 && color[2] == 0) return true;
 		return false;
 	}
-	
+
 	/**
      * Checks to see if we can enable specific optimizations for "primary" color
      * rendering and alphaless rendering.
-     * 
+     *
      * Alphaless rendering is only enabled when each of the active channels has
      * no alpha blending (alpha of 0xFF [255]).
-     * 
+     *
      * Primary color rendering optimizations are only enabled when the
      * number of active channels < 4, each of the active channels is mapped
      * to a primary color (0xFF0000 [Red], 0x00FF00 [Green], 0x0000FF [Blue])
-     * and there are no duplicate mappings (two channels mapped to Green for 
+     * and there are no duplicate mappings (two channels mapped to Green for
      * example). It is also dependent on alphaless rendering being enabled.
      */
     private void checkOptimizations()
     {
     	List<ChannelBinding> channelBindings = getChannelBindingsAsList();
-    	
+
     	for (ChannelBinding channelBinding : channelBindings)
     	{
     		boolean isActive = channelBinding.getActive();
@@ -211,7 +213,7 @@ public class Renderer {
     	}
     	log.info("Enabling alphaless rendering.");
     	optimizations.setAlphalessRendering(true);
-    	
+
     	int channelsActive = 0;
     	for (ChannelBinding channelBinding : channelBindings)
     	{
@@ -219,7 +221,7 @@ public class Renderer {
     		if (channelBinding.getActive() == false)
     			continue;
     		channelsActive++;
-    		
+
     		if (overlays != null && overlays.size() > 0)
     		{
     			log.info("Disabling PriColor rendering, have overlays.");
@@ -265,7 +267,7 @@ public class Renderer {
 					isPrimary = true;
 				}
 			}
-			
+
     		// Finally we check to make sure that the color is different from
 			// all other channels that are active.
 			List<ChannelBinding> otherBindings =
@@ -274,7 +276,7 @@ public class Renderer {
     		{
     			if (otherChannelBinding.getActive() == false)
     				continue;
-    			
+
     			int[] otherColorArray =
     				getColorArray(otherChannelBinding);
     			for (int i = 0; i < colorArray.length; i++)
@@ -290,7 +292,7 @@ public class Renderer {
     			}
     		}
     	}
-    	
+
     	// All checks have passed, enable "primary" color rendering.
     	log.info("Enabling primary color rendering.");
     	optimizations.setPrimaryColorEnabled(true);
@@ -341,7 +343,7 @@ public class Renderer {
     /**
      * Creates a new instance to render the specified pixels set and get this
      * new instance ready for rendering.
-     * 
+     *
      * @param quantumFactory a populated quantum factory.
      * @param renderingModels an enumerated list of all rendering models.
      * @param pixelsObj Pixels object.
@@ -366,7 +368,7 @@ public class Renderer {
             throw new NullPointerException("Expecting not null buffer");
         }
 
-   
+
         // Create and configure the quantum strategies.
         QuantumDef qd = rndDef.getQuantization();
         quantumManager = new QuantumManager(metadata, quantumFactory);
@@ -374,7 +376,7 @@ public class Renderer {
         quantumManager.initStrategies(qd, cBindings);
 
         // Create and configure the codomain chain.
-        
+
         codomainChains = new ArrayList<CodomainChain>();
         ChannelBinding cb;
         for (int i = 0; i < cBindings.length; i++) {
@@ -397,7 +399,7 @@ public class Renderer {
 
         // Create an appropriate rendering strategy.
         renderingStrategy = RenderingStrategy.makeNew(rndDef.getModel());
-        
+
         // Examine the metadata we've been given and enable optimizations.
         checkOptimizations();
     }
@@ -417,7 +419,7 @@ public class Renderer {
      * mapped onto a color space. This class delegates the actual rendering to a
      * {@link RenderingStrategy}, which is selected depending on that model. So
      * setting the model also results in changing the rendering strategy.
-     * 
+     *
      * @param model
      *            Identifies the color space model.
      */
@@ -430,7 +432,7 @@ public class Renderer {
     /**
      * Sets the index of the default focal section. This index is used to define
      * a default plane.
-     * 
+     *
      * @param z
      *            The stack index.
      * @see #setDefaultT(int)
@@ -443,7 +445,7 @@ public class Renderer {
     /**
      * Sets the default timepoint index. This index is used to define a default
      * plane.
-     * 
+     *
      * @param t
      *            The timepoint index.
      * @see #setDefaultZ(int)
@@ -451,7 +453,7 @@ public class Renderer {
     public void setDefaultT(int t) {
         rndDef.setDefaultT(Integer.valueOf(t));
     }
-    
+
     /**
      * Sets a map of overlays to be rendered.
      * @param overlays Overlay to color map.
@@ -460,7 +462,7 @@ public class Renderer {
     	this.overlays = overlays;
     	checkOptimizations();
     }
-    
+
     /**
      * Returns the current set of overlays to be rendered.
      * @return Overlay to color map.
@@ -485,7 +487,7 @@ public class Renderer {
      * of the <i>X</i>, <i>Y</i>, or <i>Z</i> axes. How many wavelengths are
      * rendered and what color model is used depends on the current rendering
      * settings.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.
@@ -520,7 +522,7 @@ public class Renderer {
      * of the <i>X</i>, <i>Y</i>, or <i>Z</i> axes. How many wavelengths are
      * rendered and what color model is used depends on the current rendering
      * settings.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.
@@ -560,6 +562,9 @@ public class Renderer {
             // TODO: Commenting this out for now. -- callan
             //log.info(stats.getStats());
             return img.getDataBuffer();
+        } catch (Exception e) {
+            log.error("Error with renderAsPackedInt", e);
+            throw e;
         }
         finally
         {
@@ -575,7 +580,7 @@ public class Renderer {
      * subsequent invocation of this method may return a different value if the
      * {@link #setModel(RenderingModel) setModel} method has been called since
      * the first call to this method.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.
@@ -599,7 +604,7 @@ public class Renderer {
      * Otherwise it is the <i>Z</i>-axis &#151; <i>ZY</i> plane. The <i>X2</i>-axis
      * is the <i>Y</i>-axis in the case of an <i>XY</i> or <i>ZY</i> plane.
      * Otherwise it is the <i>Z</i>-axis &#151; <i>XZ</i> plane.
-     * 
+     *
      * @param pd
      *            Selects a plane orthogonal to one of the <i>X</i>, <i>Y</i>,
      *            or <i>Z</i> axes.
@@ -617,7 +622,7 @@ public class Renderer {
     /**
      * Returns an array containing the channel bindings. The dimension of the
      * array equals the number of channels.
-     * 
+     *
      * @return See above.
      */
     public ChannelBinding[] getChannelBindings() {
@@ -637,7 +642,7 @@ public class Renderer {
     /**
      * Returns a list containing the channel bindings. The dimension of the
      * array equals the number of channels.
-     * 
+     *
      * @return See above.
      */
 	public List<ChannelBinding> getChannelBindingsAsList() {
@@ -648,7 +653,7 @@ public class Renderer {
      * Returns the settings that define the transformation context. That is, a
      * specification of how raw data is to be transformed into an image that can
      * be displayed on screen.
-     * 
+     *
      * @return See above.
      */
     public RenderingDef getRenderingDef() {
@@ -658,7 +663,7 @@ public class Renderer {
     /**
      * Returns the object that manages and allows to retrieve the objects that
      * are used to quantize wavelength data.
-     * 
+     *
      * @return See above.
      */
     public QuantumManager getQuantumManager() {
@@ -667,7 +672,7 @@ public class Renderer {
 
     /**
      * Returns the object that allows to access the pixels raw data.
-     * 
+     *
      * @return See above.
      */
     public PixelBuffer getPixels() {
@@ -676,7 +681,7 @@ public class Renderer {
 
     /**
      * Returns the {@link Pixels} set the rendering engine is for.
-     * 
+     *
      * @return See above.
      */
     public Pixels getMetadata() {
@@ -685,7 +690,7 @@ public class Renderer {
 
     /**
      * Returns the pixels type.
-     * 
+     *
      * @return A pixels type enumeration object.
      */
     public PixelsType getPixelsType() {
@@ -695,7 +700,7 @@ public class Renderer {
     /**
      * Returns the objects that defines the sequence of spatial transformations
      * to be applied to quantized data. One object per channel
-     * 
+     *
      * @return See above.
      */
     List<CodomainChain> getCodomainChains() {
@@ -705,7 +710,7 @@ public class Renderer {
     /**
      * Returns the object that defines the sequence of spatial transformations
      * to be applied to quantized data.
-     * 
+     *
      * @param channel
      * @return See above.
      */
@@ -717,14 +722,14 @@ public class Renderer {
      * Returns a {@link RenderingStats} object that the rendering strategy can
      * use to track performance. A new stats object is created upon each
      * invocation of the {@link #render(PlaneDef) render} method.
-     * 
+     *
      * @return The stats object.
      */
     public RenderingStats getStats() {
         return stats;
     }
 
-   
+
 
     //
     // Methods pushed down from RenderingBean
@@ -732,14 +737,14 @@ public class Renderer {
 
     /**
      * Sets the bit resolution.
-     * 
+     *
      * @param bitResolution
      *            The value to set.
      */
     public void setQuantumStrategy(int bitResolution) {
         /*
          * RenderingDef rd = getRenderingDef();
-         * 
+         *
          * QuantumDef qd = rd.getQuantization(), newQd; newQd = new
          * QuantumDef(); newQd.setBitResolution(Integer.valueOf(bitResolution));
          * newQd.setCdStart(qd.getCdStart()); newQd.setCdEnd(qd.getCdEnd());
@@ -753,7 +758,7 @@ public class Renderer {
 
     /**
      * Sets the codomain interval i.e. a sub-interval of [0, 255].
-     * 
+     *
      * @param start
      *            The lower bound of the interval.
      * @param end
@@ -782,7 +787,7 @@ public class Renderer {
 
     /**
      * Sets the pixels intensity interval for the specified channel.
-     * 
+     *
      * @param w
      *            The channel index.
      * @param start
@@ -800,7 +805,7 @@ public class Renderer {
 
     /**
      * Sets the mapping strategy for the specified channel.
-     * 
+     *
      * @param w
      *            The channel index.
      * @param family
@@ -823,7 +828,7 @@ public class Renderer {
 
     /**
      * Sets the color associated to the specified channel.
-     * 
+     *
      * @param w
      *            The channel index.
      * @param red
@@ -859,7 +864,7 @@ public class Renderer {
     /**
      * Makes a particular channel active or inactive.
      * @param w the wavelength index to toggle.
-     * @param active <code>true</code> to set the channel active or 
+     * @param active <code>true</code> to set the channel active or
      * <code>false</code> to set the channel inactive.
      */
     public void setActive(int w, boolean active) {
@@ -867,7 +872,7 @@ public class Renderer {
     	cb[w].setActive(Boolean.valueOf(active));
     	checkOptimizations();
     }
-    
+
     /**
      * Returns the optimizations that the renderer currently has enabled.
      * @return See above.
@@ -879,7 +884,7 @@ public class Renderer {
 
 	/**
      * Closes the buffer, cleaning up file state.
-     * 
+     *
      * @throws IOException if an I/O error occurs.
      */
     public void close() {
@@ -899,7 +904,7 @@ public class Renderer {
     /**
      * Returns an array  whose ascending indices represent the color
      * components Red, Green and Blue.
-     * 
+     *
      * @param channel  the color to decompose into an array.
      * @return See above.
      */
@@ -913,9 +918,9 @@ public class Renderer {
     }
 
     /**
-     * Returns <code>true</code> if the pixels type is signed, 
+     * Returns <code>true</code> if the pixels type is signed,
      * <code>false</code> otherwise.
-     * 
+     *
      * @return See above.
      */
     public boolean isPixelsTypeSigned()
@@ -923,11 +928,11 @@ public class Renderer {
     	if (metadata == null) return false;
     	return PlaneFactory.isTypeSigned(metadata.getPixelsType());
     }
-	
+
     /**
      * Returns the minimum value for that channels depending on the pixels
      * type and the original range (globalmax, globalmin)
-     * 
+     *
      * @param w The channel index.
      * @return See above.
      */
@@ -940,7 +945,7 @@ public class Renderer {
 	/**
      * Returns the maximum value for that channels depending on the pixels
      * type and the original range (globalmax, globalmin)
-     * 
+     *
      * @param w The channel index.
      * @return See above.
      */
@@ -985,7 +990,7 @@ public class Renderer {
 
     /**
      * Returns the image's size information per resolution level.
-     * 
+     *
      * @return See above.
      */
     public List<List<Integer>> getResolutionDescriptions()
