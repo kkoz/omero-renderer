@@ -1,19 +1,12 @@
 package omeis.providers.re;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import loci.formats.FormatException;
-import ome.io.bioformats.BfPixelBufferPlus;
 import ome.util.PixelData;
 import omeis.providers.re.codomain.CodomainChain;
-import omeis.providers.re.data.Plane2D;
-import omeis.providers.re.data.PlaneDef;
-import omeis.providers.re.data.RegionDef;
 import omeis.providers.re.lut.LutReader;
 import omeis.providers.re.quantum.BinaryMaskQuantizer;
 import omeis.providers.re.quantum.QuantizationException;
@@ -62,13 +55,11 @@ public class RGBInterleavedRenderingTask implements RenderingTask {
     /** The collection of readers.*/
     private List<LutReader> lutReaders;
 
-    private boolean isXYPlanar;
-
     RGBInterleavedRenderingTask(RGBBuffer dataBuffer, PixelData pixelData,
             List<QuantumStrategy> strategies, List<CodomainChain> chains,
             List<int[]> colors, Optimizations optimizations,
             int x1Start, int x1End, int x2Start, int x2End,
-            List<LutReader> lutReaders, boolean isXYPlanar) {
+            List<LutReader> lutReaders) {
         this.dataBuffer = dataBuffer;
         this.pixelData = pixelData;
         this.strategies = strategies;
@@ -80,12 +71,11 @@ public class RGBInterleavedRenderingTask implements RenderingTask {
         this.x2Start = x2Start;
         this.x2End = x2End;
         this.lutReaders = lutReaders;
-        this.isXYPlanar = isXYPlanar;
     }
 
     @Override
     public Object call() throws QuantizationException {
-        // TODO Auto-generated method stub
+        // TODO Currently always rendering as packed int
         renderPackedInt();
         return null;
     }
@@ -130,16 +120,12 @@ public class RGBInterleavedRenderingTask implements RenderingTask {
                     float alpha = new Integer(
                             color[ColorsFactory.ALPHA_INDEX]).floatValue() / 255;
 
-                    // TODO: What is the XY planar stuff about?
-                     //if (isXYPlanar)
+                    // TODO: We currently assume XY-Plane
+                    // TODO: Assuming 3 channels
                      discreteValue =
                      qs.quantize(
-                             pixelData.getPixelValueDirect(((pix*3) + j) * bytesPerPixel)); //TODO: Should be #of channels?
-                    /*
-                     else
-                         discreteValue =
-                             qs.quantize(plane.getPixelValue(x1, x2));
-                             */
+                             pixelData.getPixelValueDirect(((pix*3) + j) * bytesPerPixel));
+
                      if (hasMap) {
                          discreteValue = cc.transform(discreteValue);
                      }

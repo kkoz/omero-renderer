@@ -183,18 +183,7 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         ByteBuffer bbuf = ByteBuffer.wrap(imageData);
         PixelData pixelData = new PixelData(renderer.getPixelsType().getValue(), bbuf);
         int bytesPerPixel = pixelData.bytesPerPixel();
-
-        /*
-        for (int i = 0; i < imageData.length; i += 3) {
-            QuantumStrategy rQs = strategies.get(0);
-            rValue = rQs.quantize(pixelData.getPixelValueDirect(i));
-            QuantumStrategy gQs = strategies.get(1);
-            gValue = gQs.quantize(pixelData.getPixelValueDirect(i+1));
-            QuantumStrategy bQs = strategies.get(0);
-            bValue = bQs.quantize(pixelData.getPixelValueDirect(i+2));
-            intBuf[i/3] = 0xFF000000 | rValue << 16 | gValue << 8 | bValue;
-        }
-        */
+        
         for (int i = 0; i < imageData.length/3; i++) {
             for (int j = 0; j < 3; j++) {
                 int[] color = colors.get(j);
@@ -209,24 +198,18 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
                          color[ColorsFactory.GREEN_INDEX] / 255.0 : 0.0;
                 blueRatio = color[ColorsFactory.BLUE_INDEX] > 0 ?
                          color[ColorsFactory.BLUE_INDEX] / 255.0 : 0.0;
-                 boolean isXYPlanar = planeDef.getSlice() == PlaneDef.XY;
-              // Get our color offset if we've got the primary color optimization
+                 // Get our color offset if we've got the primary color optimization
                  // enabled.
                  if (isPrimaryColor && lutReader == null)
                      colorOffset = getColorOffset(color);
                  float alpha = new Integer(
                          color[ColorsFactory.ALPHA_INDEX]).floatValue() / 255;
 
-
-                 //if (isXYPlanar)
+                 // TODO: Assume XY Planar
+                 // TODO: Assume 3 channels
                  discreteValue =
                  qs.quantize(
                          pixelData.getPixelValueDirect(((i*3) + j) * bytesPerPixel));
-                /*
-                 else
-                     discreteValue =
-                         qs.quantize(plane.getPixelValue(x1, x2));
-                         */
                  if (hasMap) {
                      discreteValue = cc.transform(discreteValue);
                  }
@@ -382,13 +365,12 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         log.info("taskCount: "+taskCount+" delta: "+delta);
         BfPixelBufferPlus pixelBuffer = (BfPixelBufferPlus) renderer.getPixels();
         PixelData pixelData = getRawPixelData(def, pixelBuffer);
-        boolean isXYPlanar = def.getSlice() == PlaneDef.XY;
         for (int i = 0; i < taskCount; i++) {
             x2Start = i*delta;
             x2End = (i+1)*delta;
             tasks.add(new RGBInterleavedRenderingTask(buf, pixelData, strategies,
                     getChains(), colors, renderer.getOptimizations(),
-                    x1Start, x1End, x2Start, x2End, lutReaders, isXYPlanar));
+                    x1Start, x1End, x2Start, x2End, lutReaders));
         }
 
         // Turn the list into an array an return it.
