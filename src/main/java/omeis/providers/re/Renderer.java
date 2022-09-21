@@ -353,7 +353,7 @@ public class Renderer {
      * @throws NullPointerException If <code>null</code> parameters are passed.
      */
     public Renderer(QuantumFactory quantumFactory,
-    		List<RenderingModel> renderingModels, Pixels pixelsObj,
+            List<RenderingModel> renderingModels, Pixels pixelsObj,
             RenderingDef renderingDefObj, PixelBuffer bufferObj,
             LutProvider lutProvider) {
         metadata = pixelsObj;
@@ -397,8 +397,7 @@ public class Renderer {
                     qd.getCdEnd().intValue(), nl));
         }
 
-        // Create an appropriate rendering strategy.
-        renderingStrategy = RenderingStrategy.makeNew(rndDef.getModel());
+        this.renderingStrategy = RenderingStrategy.makeNew(renderingDefObj.getModel());
 
         // Examine the metadata we've been given and enable optimizations.
         checkOptimizations();

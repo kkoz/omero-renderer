@@ -43,7 +43,7 @@ import omeis.providers.re.quantum.QuantizationException;
  *          2005/06/18 14:36:02 $) </small>
  * @since OME2.2
  */
-abstract class RenderingStrategy {
+public abstract class RenderingStrategy {
 
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(RenderingStrategy.class);

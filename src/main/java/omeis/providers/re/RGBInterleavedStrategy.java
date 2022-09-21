@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2022 Glencoe Software, Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 package omeis.providers.re;
 
 import java.awt.Color;
@@ -14,16 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import loci.formats.FormatException;
+import loci.formats.FormatTools;
 import ome.conditions.ResourceError;
-import ome.io.bioformats.BfPixelBufferPlus;
-import ome.io.nio.PixelBuffer;
+import ome.io.bioformats.BfPixelBuffer;
 import ome.model.core.Pixels;
 import ome.model.display.ChannelBinding;
 import ome.model.display.QuantumDef;
 import ome.model.enums.PixelsType;
 import ome.util.PixelData;
 import omeis.providers.re.codomain.CodomainChain;
-import omeis.providers.re.data.Plane2D;
 import omeis.providers.re.data.PlaneDef;
 import omeis.providers.re.data.RegionDef;
 import omeis.providers.re.lut.LutReader;
@@ -150,11 +167,11 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         return list;
     }
 
-    private void renderSingleThread(RGBBuffer buf, PlaneDef planeDef) throws IOException,
+    private void renderSingleThreaded(RGBBuffer buf, PlaneDef planeDef) throws IOException,
     QuantizationException {
         RenderingStats performanceStats = renderer.getStats();
 
-        BfPixelBufferPlus pixelBuffer = (BfPixelBufferPlus) renderer.getPixels();
+        BfPixelBuffer pixelBuffer = (BfPixelBuffer) renderer.getPixels();
 
         int discreteValue;
         double redRatio, greenRatio, blueRatio;
@@ -174,16 +191,18 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         CodomainChain cc;
         RegionDef region = planeDef.getRegion();
 
-        byte[] imageData = pixelBuffer.getInterleavedTile(
-                region.getX(),
+        byte[] imageData = new byte[region.getWidth() * region.getHeight()
+                                 * FormatTools.getBytesPerPixel(PixelsType.VALUE_BIT) * 3];
+        pixelBuffer.getTileDirect(0, 0, 0, region.getX(),
                 region.getY(),
                 region.getWidth(),
-                region.getHeight());
+                region.getHeight(),
+                imageData);
 
         ByteBuffer bbuf = ByteBuffer.wrap(imageData);
         PixelData pixelData = new PixelData(renderer.getPixelsType().getValue(), bbuf);
         int bytesPerPixel = pixelData.bytesPerPixel();
-        
+
         for (int i = 0; i < imageData.length/3; i++) {
             for (int j = 0; j < 3; j++) {
                 int[] color = colors.get(j);
@@ -363,7 +382,7 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         int x1End = sizeX1;
         int x2Start, x2End;
         log.info("taskCount: "+taskCount+" delta: "+delta);
-        BfPixelBufferPlus pixelBuffer = (BfPixelBufferPlus) renderer.getPixels();
+        BfPixelBuffer pixelBuffer = (BfPixelBuffer) renderer.getPixels();
         PixelData pixelData = getRawPixelData(def, pixelBuffer);
         for (int i = 0; i < taskCount; i++) {
             x2Start = i*delta;
@@ -377,18 +396,21 @@ public class RGBInterleavedStrategy extends RenderingStrategy {
         return tasks.toArray(new RenderingTask[tasks.size()]);
     }
 
-    private PixelData getRawPixelData(PlaneDef def, BfPixelBufferPlus pixelBuffer) {
+    private PixelData getRawPixelData(PlaneDef def, BfPixelBuffer pixelBuffer) {
         //TODO: Add performance stats?
         try
         {
             RegionDef region = def.getRegion();
-            byte[] imageData = pixelBuffer.getInterleavedTile(
+            byte[] buf = new byte[region.getWidth() * region.getHeight()
+                                  * FormatTools.getBytesPerPixel(PixelsType.VALUE_BIT) * 3];
+            pixelBuffer.getTileDirect(0, 0, 0,
                     region.getX(),
                     region.getY(),
                     region.getWidth(),
-                    region.getHeight());
+                    region.getHeight(),
+                    buf);
 
-            ByteBuffer bbuf = ByteBuffer.wrap(imageData);
+            ByteBuffer bbuf = ByteBuffer.wrap(buf);
             PixelData pixelData = new PixelData(renderer.getPixelsType().getValue(), bbuf);
             return pixelData;
         } catch (IOException e) {
