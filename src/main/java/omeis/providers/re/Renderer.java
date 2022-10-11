@@ -350,10 +350,9 @@ public class Renderer {
      * @param lutProvider provider of the available lookup tables.
      * @throws NullPointerException If <code>null</code> parameters are passed.
      */
-    public Renderer(QuantumFactory quantumFactory,
-    		List<RenderingModel> renderingModels, Pixels pixelsObj,
+    public Renderer(QuantumFactory quantumFactory, Pixels pixelsObj,
             RenderingDef renderingDefObj, PixelBuffer bufferObj,
-            LutProvider lutProvider) {
+            LutProvider lutProvider, RenderingStrategy renderingStrategy) {
         metadata = pixelsObj;
         rndDef = renderingDefObj;
         buffer = bufferObj;
@@ -396,7 +395,7 @@ public class Renderer {
         }
 
         // Create an appropriate rendering strategy.
-        renderingStrategy = RenderingStrategy.makeNew(rndDef.getModel());
+        this.renderingStrategy = renderingStrategy;
         
         // Examine the metadata we've been given and enable optimizations.
         checkOptimizations();
@@ -407,24 +406,9 @@ public class Renderer {
      *
      * @return See above.
      */
-    LutProvider getLutProvider()
+    public LutProvider getLutProvider()
     {
         return lutProvider;
-    }
-
-    /**
-     * Specifies the model that dictates how transformed raw data has to be
-     * mapped onto a color space. This class delegates the actual rendering to a
-     * {@link RenderingStrategy}, which is selected depending on that model. So
-     * setting the model also results in changing the rendering strategy.
-     * 
-     * @param model
-     *            Identifies the color space model.
-     */
-    public void setModel(RenderingModel model)
-    {
-        rndDef.setModel(model);
-        renderingStrategy = RenderingStrategy.makeNew(model);
     }
 
     /**
@@ -698,7 +682,7 @@ public class Renderer {
      * 
      * @return See above.
      */
-    List<CodomainChain> getCodomainChains() {
+    public List<CodomainChain> getCodomainChains() {
         return Collections.unmodifiableList(codomainChains);
     }
 

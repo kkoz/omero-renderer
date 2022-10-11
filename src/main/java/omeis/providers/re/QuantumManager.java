@@ -30,7 +30,7 @@ import omeis.providers.re.quantum.QuantumStrategy;
  *         href="mailto:a.falconi@dundee.ac.uk"> a.falconi@dundee.ac.uk</a>
  * @since OME2.2
  */
-class QuantumManager {
+public class QuantumManager {
 
     /** The pixels metadata. */
     private final Pixels metadata;
@@ -118,7 +118,7 @@ class QuantumManager {
      *            The wavelength index in the <i>OME</i> 5D-pixels file.
      * @return See above.
      */
-    QuantumStrategy getStrategyFor(int w) {
+    public QuantumStrategy getStrategyFor(int w) {
         return wavesStg[w];
     }
 

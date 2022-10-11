@@ -43,7 +43,7 @@ import omeis.providers.re.quantum.QuantizationException;
  *          2005/06/18 14:36:02 $) </small>
  * @since OME2.2
  */
-abstract class RenderingStrategy {
+public abstract class RenderingStrategy {
 
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(RenderingStrategy.class);
@@ -214,7 +214,7 @@ abstract class RenderingStrategy {
      *            Identifies the color space model.
      * @return A strategy suitable for the specified model.
      */
-    static RenderingStrategy makeNew(RenderingModel model) {
+    public static RenderingStrategy makeNew(RenderingModel model) {
         String value = model.getValue();
         if (value.equals(Renderer.MODEL_GREYSCALE)) {
             return new GreyScaleStrategy();
@@ -256,7 +256,7 @@ abstract class RenderingStrategy {
      *             If an error occurred while quantizing the pixels raw data.
      * @see renderAsPackedInt()
      */
-    abstract RGBBuffer render(Renderer ctx, PlaneDef pd) throws IOException,
+    protected abstract RGBBuffer render(Renderer ctx, PlaneDef pd) throws IOException,
             QuantizationException;
 
     /**
@@ -287,7 +287,7 @@ abstract class RenderingStrategy {
      *             If an error occurred while quantizing the pixels raw data.
      * @see render()
      */
-    abstract RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef pd)
+    protected abstract RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef pd)
             throws IOException, QuantizationException;
 
     /**
@@ -318,7 +318,7 @@ abstract class RenderingStrategy {
      *             If an error occurred while quantizing the pixels raw data.
      * @see render()
      */
-    abstract RGBAIntBuffer renderAsPackedIntAsRGBA(Renderer ctx, PlaneDef pd)
+    protected abstract RGBAIntBuffer renderAsPackedIntAsRGBA(Renderer ctx, PlaneDef pd)
     throws IOException, QuantizationException;
 
 
@@ -334,7 +334,7 @@ abstract class RenderingStrategy {
      *            A pixels set.
      * @return See above.
      */
-    abstract int getImageSize(PlaneDef pd, Pixels pixels);
+    protected abstract int getImageSize(PlaneDef pd, Pixels pixels);
 
     /**
      * Returns a string with the dimensions of the specified plane. The returned
@@ -353,6 +353,6 @@ abstract class RenderingStrategy {
      *            A pixels set.
      * @return See above.
      */
-    abstract String getPlaneDimsAsString(PlaneDef pd, Pixels pixels);
+    protected abstract String getPlaneDimsAsString(PlaneDef pd, Pixels pixels);
 
 }

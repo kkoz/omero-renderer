@@ -50,7 +50,7 @@ class GreyScaleStrategy extends RenderingStrategy {
      * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
      */
     @Override
-    RGBBuffer render(Renderer ctx, PlaneDef planeDef) throws IOException,
+    protected RGBBuffer render(Renderer ctx, PlaneDef planeDef) throws IOException,
             QuantizationException {
         // Set the context and retrieve objects we're gonna use.
         renderer = ctx;
@@ -127,7 +127,7 @@ class GreyScaleStrategy extends RenderingStrategy {
 	 * @see RenderingStrategy#render(Renderer ctx, PlaneDef planeDef)
 	 */
 	@Override
-	RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
+	protected RGBIntBuffer renderAsPackedInt(Renderer ctx, PlaneDef planeDef)
 	        throws IOException, QuantizationException {
         // Set the context and retrieve objects we're gonna use.
         renderer = ctx;
@@ -208,7 +208,7 @@ class GreyScaleStrategy extends RenderingStrategy {
 	 * @see RenderingStrategy#renderAsPackedIntAsRGBA(Renderer ctx, PlaneDef planeDef)
 	 */
 	@Override
-	RGBAIntBuffer renderAsPackedIntAsRGBA(Renderer ctx, PlaneDef planeDef)
+	protected RGBAIntBuffer renderAsPackedIntAsRGBA(Renderer ctx, PlaneDef planeDef)
 	        throws IOException, QuantizationException {
         // Set the context and retrieve objects we're gonna use.
         renderer = ctx;
@@ -295,7 +295,7 @@ class GreyScaleStrategy extends RenderingStrategy {
      * @see RenderingStrategy#getImageSize(PlaneDef, Pixels)
      */
     @Override
-    int getImageSize(PlaneDef pd, Pixels pixels) {
+    protected int getImageSize(PlaneDef pd, Pixels pixels) {
         initAxesSize(pd, pixels);
         return sizeX1 * sizeX2 * 3;
     }
@@ -306,7 +306,7 @@ class GreyScaleStrategy extends RenderingStrategy {
      * @see RenderingStrategy#getPlaneDimsAsString(PlaneDef, Pixels)
      */
     @Override
-    String getPlaneDimsAsString(PlaneDef pd, Pixels pixels) {
+    protected String getPlaneDimsAsString(PlaneDef pd, Pixels pixels) {
         initAxesSize(pd, pixels);
         return sizeX1 + "x" + sizeX2;
     }
