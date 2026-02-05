@@ -31,7 +31,7 @@ compileJava {
 dependencies {
     testImplementation("org.testng:testng:7.5")
 
-    api("org.openmicroscopy:omero-romio:5.8.3")
+    api("org.openmicroscopy:omero-romio:5.8.4")
 
     // Keep these from being exposed to child projects
     implementation("org.apache.commons:commons-lang3:3.18.0")
