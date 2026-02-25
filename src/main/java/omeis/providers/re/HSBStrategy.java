@@ -63,15 +63,8 @@ class HSBStrategy extends RenderingStrategy {
     /** The logger for this particular class */
     private static Logger log = LoggerFactory.getLogger(HSBStrategy.class);
 
-    /** Shared thread pool */
-    ExecutorService processor;
-
     public HSBStrategy(ExecutorService processor) {
         this.processor = processor;
-    }
-
-    public HSBStrategy(Object obj) {
-        this.processor = Executors.newCachedThreadPool();
     }
 
     /**
@@ -361,9 +354,6 @@ class HSBStrategy extends RenderingStrategy {
                 throw new RuntimeException(e);
             }
         }
-
-        // Shutdown the task processor
-        processor.shutdown();
 
         // End the performance metrics for this rendering event.
         performanceStats.endRendering();
